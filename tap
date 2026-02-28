@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Cosmic Tap</title>
+<style>
+body{
+    margin:0;
+    background:radial-gradient(circle at center,#1a1a2e,#0f0f1a);
+    color:white;
+    font-family:Arial;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+}
+
+.game{
+    background:#161625;
+    padding:25px;
+    border-radius:20px;
+    width:380px;
+    text-align:center;
+    box-shadow:0 0 50px rgba(0,255,255,0.2);
+    position:relative;
+}
+
+#score{font-size:32px;color:#00ffd5;}
+#combo{font-size:14px;color:orange;}
+#prestige{font-size:13px;color:#aaa;margin-bottom:10px;}
+
+.tap-btn{
+    font-size:22px;
+    padding:20px 30px;
+    border:none;
+    border-radius:15px;
+    cursor:pointer;
+    background:linear-gradient(45deg,#00ffd5,#00aaff);
+    color:black;
+    transition:0.1s;
+    position:relative;
+}
+
+.tap-btn:active{transform:scale(0.9);}
+
+.floating{
+    position:absolute;
+    font-weight:bold;
+    animation:float 1s ease-out forwards;
+}
+
+@keyframes float{
+    from{opacity:1;transform:translateY(0);}
+    to{opacity:0;transform:translateY(-50px);}
+}
+
+.panel{
+    margin-top:15px;
+    background:#22223a;
+    padding:10px;
+    border-radius:12px;
+    font-size:13px;
+}
+
+button{
+    margin-top:5px;
+    padding:6px 10px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="game">
+    <h2>🌌 COSMIC TAP</h2>
+    <div id="score">0</div>
+    <div id="combo">Комбо x1</div>
+    <div id="prestige">Престиж: 0 (бонус +0%)</div>
+
+    <button class="tap-btn" onclick="tap(event)">Тап!</button>
+
+    <div class="panel">
+        👑 Престиж (нужно 5000 очков)<br>
+        <button onclick="doPrestige()">Переродиться</button>
+    </div>
+
+    <div class="panel">
+        🏆 Достижения:
+        <div id="achievements"></div>
+    </div>
+</div>
+
+<script>
+let score=0;
+let combo=1;
+let comboTimer=null;
+let prestige=0;
+let critChance=0.1;
+
+let achievements=[];
+
+function save(){
+    localStorage.setItem("cosmicTap",JSON.stringify({
+        score,prestige,achievements
+    }));
+}
+
+function load(){
+    if(localStorage.getItem("cosmicTap")){
+        const data=JSON.parse(localStorage.getItem("cosmicTap"));
+        score=data.score||0;
+        prestige=data.prestige||0;
+        achievements=data.achievements||[];
+    }
+}
+load();
+
+function update(){
+    document.getElementById("score").textContent=Math.floor(score);
+    document.getElementById("combo").textContent="Комбо x"+combo;
+    document.getElementById("prestige").textContent=
+        "Престиж: "+prestige+" (бонус +"+(prestige*10)+"%)";
+    document.getElementById("achievements").innerHTML=
+        achievements.join("<br>");
+}
+
+function tap(e){
+    let base=1+(prestige*0.1);
+    let gain=base*combo;
+
+    if(Math.random()<critChance){
+        gain*=3;
+        showText(e,"💥 КРИТ x3", "red");
+    }
+
+    score+=gain;
+    showText(e,"+"+Math.floor(gain),"#00ffd5");
+
+    combo++;
+    clearTimeout(comboTimer);
+    comboTimer=setTimeout(()=>combo=1,1500);
+
+    checkAchievements();
+    update();
+    save();
+}
+
+function showText(e,text,color){
+    const el=document.createElement("div");
+    el.className="floating";
+    el.style.color=color;
+    el.textContent=text;
+    el.style.left=e.target.offsetLeft+60+"px";
+    el.style.top=e.target.offsetTop+"px";
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1000);
+}
+
+function doPrestige(){
+    if(score>=5000){
+        prestige++;
+        score=0;
+        combo=1;
+        alert("👑 Перерождение! Постоянный бонус увеличен!");
+        save();
+        update();
+    }
+}
+
+function checkAchievements(){
+    if(score>=1000 && !achievements.includes("🔥 1000 очков")){
+        achievements.push("🔥 1000 очков");
+    }
+    if(prestige>=1 && !achievements.includes("👑 Первое перерождение")){
+        achievements.push("👑 Первое перерождение");
+    }
+    if(combo>=20 && !achievements.includes("⚡ Комбо 20")){
+        achievements.push("⚡ Комбо 20");
+    }
+}
+
+// Рандомные бонусы
+setInterval(()=>{
+    if(Math.random()<0.4){
+        alert("🎁 Космический бонус +500!");
+        score+=500;
+        update();
+        save();
+    }
+},40000);
+
+update();
+</script>
+
+</body>
+</html>
